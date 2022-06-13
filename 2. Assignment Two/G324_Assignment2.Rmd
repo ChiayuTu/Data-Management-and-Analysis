@@ -1,0 +1,486 @@
+---
+title: "Assignment Two - Earthquake Plotting"
+author: "Chiayu Tu(Louis Tu)"
+date: "1/27/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+#clear the desks
+rm(list = ls(all = TRUE))
+
+#set data Directory
+SaveFile <- "C:/Users/tulou/Desktop/PSU_Classes/G_324/Assignment_Two"
+
+#package used
+library(tidyverse)
+library(maps)
+library(mapdata)
+```
+
+## Statement of Problem One
+
+The following figures show the relationship between the distribution of earthquakes in the coastal region of the Pacific Northwest and Chile. Because both regions are subduction zones, both regions may show a correlation between earthquake and tectonic activity.
+
+## Methods
+
+Using ggplot make a graph, let x is longitude and y is latitude, plotting magnitude on the graph of latitude vs longitude, and longitude and depth.
+I retrieved the data from USGS website and the data for the Pacific Northwest, we selected latitude 41 to 51, longitude -129 to - 116, and the date is from January 1st to December 31st. I chose the data from Chile in the same time period as the Pacific Northwest, the latitude is from -60 to 0, and the longitude is from -81 to -62. Download all relevant data from USGS.
+
+\newpage
+
+## Results
+
+From Figure one, we can see that the plot of the Washington state area is quite dense, forming a sharp contrast with the Oregon state below. The plot from the depth and magnitude type shows that because Washington State is above Cascadia subduction zone, earthquakes are densely located around this area.
+
+```{r Spatial Distribution of Earthquakes in the Pacific Northwest, message=FALSE, echo=FALSE}
+
+website <- "https://earthquake.usgs.gov/fdsnws/event/1/query"
+qryFormat <- "format=csv"
+qryStime <- "starttime=2018-01-01"
+qryEndtime <- "endtime=2018-12-31"
+qryMinlat <- "minlatitude=41"
+qryMaxLat <- "maxlatitude=51"
+qryMinLong <- "minlongitude=-129"
+qryMaxLong <- "maxlongitude=-116"
+qryMinMag <- "minmagnitude="
+qryMaxMag <- "maxmagnitude="
+
+qryStr <- paste(qryFormat, qryStime, qryEndtime, qryMinlat, qryMaxLat, qryMinLong, qryMaxLong, sep = "&")
+webQuery <- paste(website, qryStr, sep = "?")
+targetFile <- "EarthquakeFile.csv"
+download.file(webQuery, targetFile, quiet = TRUE)
+eqDF <- as_tibble(read.csv(targetFile, header = TRUE))
+
+mapStates <- map_data("state")
+mapUSA <- subset(mapStates, region %in% c("oregon", "washington"))
+
+filteredDFfA <- filter(eqDF, mag>0, type == "earthquake", 
+                      magType %in% c("mb", "md", "mh", "ml", "mw", "mwr"))
+
+#Question One
+QuestionOne <- ggplot() +
+  geom_polygon(data = mapUSA, fill = "wheat3", aes(long, lat, group = group)) +
+  geom_point(data = filteredDFfA, aes(longitude, latitude, color = depth, size = mag)) +
+  scale_color_gradient(low = "green", 
+                       high = "red") +
+  coord_quickmap() +
+  scale_size(range = c(1, 3)) +
+  theme_bw() + 
+  #facet_wrap(~magType) +
+  labs(caption = "Figure One: Spatial Distribution of Earthquakes in the Pacific Northwest",
+       x = "Longitude (°)",
+       y = "Latitude  (°)",
+       color = "Depth",
+       size = "Magniture") +
+  theme(axis.title = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        legend.position = "bottom",
+        plot.caption = element_text(size = 10, hjust = 0))
+
+QuestionOne
+```
+
+\newpage
+
+It can be seen from Figure two that when the magnitude is less than 4 are filtered out. Strong earthquakes occurred near the coast at a depth of about 10 km, but one above the Cascadia subduction zone were deeper than 30 km.
+
+```{r More Intense Earthquake, message=FALSE, echo=FALSE}
+filteredDFfB <- filter(eqDF, mag>4, type == "earthquake", 
+                      magType %in% c("mb", "md", "mh", "ml", "mw", "mwr"))
+#magType %in% c("mb", "md", "mh", "ml", "mw", "mwr", "mww")
+
+QuestionTwo <- ggplot() +
+  geom_polygon(data = mapUSA, fill = "wheat3", aes(long, lat, group = group)) +
+  geom_point(data = filteredDFfB, aes(longitude, latitude, color = depth, size = mag)) +
+  scale_color_gradient(low = "green", 
+                       high = "red") +
+  coord_quickmap() +
+  scale_size(range = c(1, 3)) +
+  theme_bw() +
+  labs(caption = "Figure Two: More Intense Earthquake",
+       x = "Longitude (°)",
+       y = "Latitude  (°)",
+       color = "Depth",
+       size = "Magniture") +
+  theme(axis.title = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        legend.position = "bottom",
+        plot.caption = element_text(size = 10, hjust = 0))
+
+QuestionTwo
+```
+\newpage
+
+The straight line in Figure three is depth at 10 km which means it is inside oceanic crust. The longitude in this line is in the pacific ocean. What is all due to active tectonics all the Cascadia.
+In Figure Three, we can see most of plots concentrate at depth from 0 to 30 km. It can show earthquakes are close to the surface. 
+
+
+```{r E-W cross-section, message=FALSE, echo=FALSE}
+QuestionThree <- ggplot() +
+  geom_point(data = filteredDFfA, 
+             aes(x = longitude, y = depth, color = mag)) +
+  scale_color_gradient(low = "green", 
+                       high = "red") +
+  scale_y_reverse() +
+  labs(caption = "Figure Three: E-W cross-section",
+       x = "Longitude (°)",
+       y = "Depth (km)",
+       color = "Magniture") +
+  theme(axis.title = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        legend.position = "bottom",
+        plot.caption = element_text(size = 10, hjust = 0))
+
+QuestionThree
+```
+
+\newpage
+
+It can be clearly seen from the cross-section in Figure Five that the depth of the earthquakes around Chile formed a clear slope in the graph, which indicated that the plate near Chile shifts downward to go East.
+
+```{r cross-section South America, message=FALSE, echo=FALSE}
+qryFormatS <- "format=csv"
+qryStimeS <- "starttime=2018-01-01"
+qryEndtimeS <- "endtime=2018-12-31"
+qryMinlatS <- "minlatitude=-60"
+qryMaxLatS <- "maxlatitude=0"
+qryMinLongS <- "minlongitude=-81"
+qryMaxLongS <- "maxlongitude=-62"
+qryMinMagS <- "minmagnitude="
+qryMaxMagS <- "maxmagnitude="
+qryMinDepthS <- "mindepth="
+qryMaxDepthS <- "maxdepth="
+qryLimitS <- "limit="
+
+#paste(): Concatenate vectors after converting to character.
+#sep: a character string to separate the terms.
+qryStrS <- paste(qryFormatS, 
+                 qryStimeS, 
+                 qryEndtimeS, 
+                 qryMinlatS, 
+                 qryMaxLatS, 
+                 qryMinLongS, 
+                 qryMaxLongS, 
+                 sep = "&")
+
+webQueryS <- paste(website, qryStrS, sep = "?")
+
+targetFileS <- "EarthquakeFileChile.csv"
+
+download.file(webQueryS, targetFileS, quiet = TRUE)
+
+eqDFA <- as_tibble(read.csv(targetFileS, header = TRUE))
+#view(eqDFA)
+
+mapData <- map_data("world")
+SouthAmerica <- subset(mapData, region %in% c("Chile", "Argentina", "peru"))
+
+filtereqDFS <- filter(eqDFA, mag > 0, type == "earthquake", 
+                      magType %in% c("mb", "md", "mh", "ml", "mw", "mwr"))
+
+#Use ggplot to create a grap for SouthAmerica
+QuestionFourFigure <- ggplot() +
+  geom_polygon(data = SouthAmerica, 
+               fill = "wheat3", 
+               aes(long, lat, group = group)) +
+  geom_point(data = filtereqDFS, 
+             aes(longitude, latitude, color = depth, size = mag)) +
+  scale_color_gradient(low = "green", 
+                       high = "red") +
+  coord_quickmap() +
+  scale_size(range = c(1, 3)) +
+  labs(caption = "Figure Four: South America Coastal Region",
+       x = "Longitude (°)",
+       y = "Latitude  (°)",
+       color = "Depth",
+       size = "Magniture") +
+  theme(axis.title = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        legend.position = "bottom",
+        plot.caption = element_text(size = 10, hjust = 0))
+
+filtereqDFSA <- filter(eqDFA, mag > 4, type == "earthquake", 
+                      magType %in% c("mb", "md", "mh", "ml", "mw", "mwr"))
+
+QuestionFour <- ggplot() +
+  geom_point(data = filtereqDFSA, 
+             aes(x = longitude, y = depth, color = mag)) +
+  scale_color_gradient(low = "green", 
+                       high = "red") +
+  scale_y_reverse() +
+  labs(caption = "Figure Five: cross-section South America",
+       x = "Longitude (°)",
+       y = "Depth (km)",
+       color = "Magniture") +
+  theme(axis.title = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        legend.position = "bottom",
+        plot.caption = element_text(size = 10, hjust = 0))
+
+QuestionFourFigure
+QuestionFour
+```
+
+\newpage
+
+### Discussion
+
+By analyzing and comparing the data clusters of earthquakes of the Pacific Northwest and Chile, it can be found that these two coastal areas are located at subduction zone. It can be seen from Figure One and Figure Four that the earthquakes in these two regions are mainly concentrated in the vicinity of where the plate meets the coastal mountain range, the Pacific Northwest and Chile, Peru, and Argentina. 
+
+Comparing Figure three and Figure five's cross-section, we can see the difference in the shape of each of the subducting plates. In the Pacific Northwest, most of earthquakes are close to the surface. However in Chile, because there is a Peru-Chile trench that extends to South America under the coast of Chile. A long subduction zone forms between multiple plates, causing earthquakes to occur in this region deeper than pacific northwest.
+
+### Conclusion
+
+By comparing the distribution of earthquakes in the two regions (pacific northwest vs Chile), it can be concluded that earthquakes are mainly concentrated in the vicinity of the subduction zone and therefore relate to tectonics. Depth of earthquakes along the subduction zone is higher than that in other places.
+
+### References Cited
+
+USGS. (n.d.). API documentation - earthquake catalog. U.S. Geological Survey. Retrieved January 25, 2022, from <https://earthquake.usgs.gov/fdsnws/event/1/>
+
+\newpage
+
+### Appendix - R Code
+
+\# clear the decks
+
+rm(list = ls(all = TRUE))
+
+\# set up directory
+
+SaveFile \<- "C:/Users/tulou/Desktop/PSU_Classes/G_324/Assignment_Two"
+
+\# need to use ggplot2 and map_data, so we need the tydiverse, maps, mapdata
+
+library(tidyverse) library(maps) library(mapdata)
+
+\# Download the map data
+
+website \<- "<https://earthquake.usgs.gov/fdsnws/event/1/query>"
+
+qryFormat \<- "format=csv"
+
+qryStime \<- "starttime=2018-01-01"
+
+qryEndtime \<- "endtime=2018-12-31"
+
+qryMinlat \<- "minlatitude=41"
+
+qryMaxLat \<- "maxlatitude=51"
+
+qryMinLong \<- "minlongitude=-129"
+
+qryMaxLong \<- "maxlongitude=-116"
+
+qryMinMag \<- "minmagnitude="
+
+qryMaxMag \<- "maxmagnitude="
+
+qryMinDepth \<- "mindepth="
+
+qryMaxDepth \<- "maxdepth="
+
+qryLimit \<- "limit="
+
+\# Concatenate all vectors and use '&' and '?' to seperate
+
+qryStr \<- paste(qryFormat, qryStime, qryEndtime, qryMinlat, qryMaxLat, qryMinLong, qryMaxLong, sep = "&")
+
+webQuery \<- paste(website, qryStr, sep = "?")
+
+\# download file and save as .csv file
+
+targetFile \<- "EarthquakeFile.csv"
+
+download.file(webQuery, targetFile, quiet = TRUE)
+
+eqDF \<- as_tibble(read.csv(targetFile, header = TRUE))
+
+\# select state's data and Subset Washington and Oregon
+
+mapStates \<- map_data("state")
+
+mapUSA \<- subset(mapStates, region %in% c("oregon", "washington"))
+
+\# Filter data and play with multivariate plots
+
+filteredDFfA \<- filter(eqDF, mag>0, type == "earthquake", magType %in% c("mb", "md", "mh", "ml", "mw", "mwr"))
+
+\# Question One
+
+QuestionOne \<- ggplot() +
+
+    geom_polygon(data = mapUSA, fill = "wheat3", aes(long, lat, group = group)) +
+
+    geom_point(data = filteredDFfA, aes(longitude, latitude, color = depth, size = mag)) +
+
+    scale_color_gradient(low = "green", high = "red") +
+    coord_quickmap() +
+
+    scale_size(range = c(1, 3)) +
+
+    theme_bw() + 
+
+    #facet_wrap(~magType) +
+
+    labs(caption = "Figure One: Spatial Distribution of Earthquakes in the Pacific Northwest", x = "Longitude (°)", y = "Latitude  (°)", color = "Depth", size = "Magniture") +
+
+    theme(axis.title = element_text(size = 10),
+          legend.title = element_text(size = 10),
+          legend.position = "bottom",
+          plot.caption = element_text(size = 20, hjust = 0))
+          
+
+\# Filter data which maginitude is large than 4
+
+filteredDFfB \<- filter(eqDF, mag>4, type == "earthquake", magType %in% c("mb", "md", "mh", "ml", "mw", "mwr"))
+
+\# Question Two
+
+QuestionTwo \<- ggplot() +
+
+    geom_polygon(data = mapUSA, fill = "wheat3", aes(long, lat, group = group)) +
+
+    geom_point(data = filteredDFfB, aes(longitude, latitude, color = depth, size = mag)) +
+
+    scale_color_gradient(low = "green", 
+                         high = "red") +
+                         
+    coord_quickmap() +
+
+    scale_size(range = c(1, 3)) +
+
+    theme_bw() +
+
+    labs(caption = "Figure Two: More Intense Earthquake",
+         x = "Longitude (°)",
+         y = "Latitude  (°)",
+         color = "Depth",
+         size = "Magniture") +
+         
+    theme(axis.title = element_text(size = 10),
+          legend.title = element_text(size = 10),
+          legend.position = "bottom",
+          plot.caption = element_text(size = 20, hjust = 0))
+          
+
+\# Question Three
+
+QuestionThree \<- ggplot() +
+
+    geom_point(data = filteredDFfA, 
+               aes(x = longitude, y = depth, color = mag)) +
+               
+    scale_color_gradient(low = "green", 
+                         high = "red") +
+                         
+    scale_y_reverse() +
+
+    labs(caption = "Figure Three: E-W cross-section",
+         x = "Longitude (°)",
+         y = "Depth (km)",
+         color = "Magniture") +
+         
+    theme(axis.title = element_text(size = 10),
+          legend.title = element_text(size = 10),
+          legend.position = "bottom",
+          plot.caption = element_text(size = 20, hjust = 0))
+          
+
+\# Question Four
+
+qryFormatS \<- "format=csv"
+
+qryStimeS \<- "starttime=2018-01-01"
+
+qryEndtimeS \<- "endtime=2018-12-31"
+
+qryMinlatS \<- "minlatitude=-60"
+
+qryMaxLatS \<- "maxlatitude=0"
+
+qryMinLongS \<- "minlongitude=-81"
+
+qryMaxLongS \<- "maxlongitude=-62"
+
+qryMinMagS \<- "minmagnitude="
+
+qryMaxMagS \<- "maxmagnitude="
+
+qryMinDepthS \<- "mindepth="
+
+qryMaxDepthS \<- "maxdepth="
+
+qryLimitS \<- "limit="
+
+#paste(): Concatenate vectors after converting to character. #sep: a character string to separate the terms.
+
+qryStrS \<- paste(qryFormatS, qryStimeS, qryEndtimeS, qryMinlatS, qryMaxLatS, qryMinLongS, qryMaxLongS, sep = "&")
+
+webQueryS \<- paste(website, qryStrS, sep = "?")
+
+targetFileS \<- "EarthquakeFileChile.csv"
+
+download.file(webQueryS, targetFileS, quiet = TRUE)
+
+eqDFA \<- as_tibble(read.csv(targetFileS, header = TRUE)) view(eqDFA)
+
+mapData \<- map_data("world")
+
+SouthAmerica \<- subset(mapData, region %in% c("Chile", "Argentina", "peru"))
+
+filtereqDFS \<- filter(eqDFA, mag \> 0, type == "earthquake", magType %in% c("mb", "md", "mh", "ml", "mw", "mwr"))
+
+#Use ggplot to create a grap for SouthAmerica
+
+QuestionFourFigure \<- ggplot() +
+
+    geom_polygon(data = SouthAmerica, 
+                 fill = "wheat3", 
+                 aes(long, lat, group = group)) +
+                 
+    geom_point(data = filtereqDFS, 
+               aes(longitude, latitude, color = depth, size = mag)) +
+               
+    scale_color_gradient(low = "green", 
+                         high = "red") +
+                         
+    coord_quickmap() +
+
+    scale_size(range = c(1, 3)) +
+
+    labs(caption = "Figure Four: South America Coastal Region",
+         x = "Longitude (°)",
+         y = "Latitude  (°)",
+         color = "Depth",
+         size = "Magniture") +
+         
+    theme(axis.title = element_text(size = 10),
+          legend.title = element_text(size = 10),
+          legend.position = "bottom",
+          plot.caption = element_text(size = 20, hjust = 0))
+
+filtereqDFSA \<- filter(eqDFA, mag \> 4, type == "earthquake", magType %in% c("mb", "md", "mh", "ml", "mw", "mwr"))
+
+QuestionFour \<- ggplot() +
+
+    geom_point(data = filtereqDFSA, 
+               aes(x = longitude, y = depth, color = mag)) +
+               
+    scale_color_gradient(low = "green", 
+                         high = "red") +
+                         
+    scale_y_reverse() +
+
+    labs(caption = "Figure Four: cross-section South America",
+         x = "Longitude (°)",
+         y = "Depth (km)",
+         color = "Magniture") +
+         
+    theme(axis.title = element_text(size = 10),
+          legend.title = element_text(size = 10),
+          legend.position = "bottom",
+          plot.caption = element_text(size = 20, hjust = 0))
